@@ -75,10 +75,16 @@ input,select,textarea,button{font-family:inherit;font-size:16px;}
   border-bottom:2.5px solid var(--navy);
 }
 .lh-l{flex:1;min-width:0;}
-.lh-r{flex-shrink:0;text-align:right;min-width:180px;}
+.lh-r{flex-shrink:0;text-align:right;min-width:0;max-width:220px;}
+/* Stack vertically on mobile so columns never overlap */
 @media(max-width:620px){
-  .lh{flex-wrap:wrap;}
-  .lh-r{text-align:left;min-width:0;}
+  .lh{flex-direction:column;gap:10px;padding:14px 16px 12px;}
+  .lh-l,.lh-r{width:100%;max-width:100%;}
+  .lh-r{text-align:left;}
+  .clinic-lh{text-align:left;}
+  /* Compact Rx stamp inline with label */
+  .rx-stamp{font-size:42px;display:inline-block;vertical-align:middle;margin-right:6px;}
+  .rx-stamp-lbl{display:inline-block;vertical-align:middle;}
 }
 .dr-name{
   font-family:'Playfair Display',Georgia,serif;
@@ -361,10 +367,13 @@ input,select,textarea,button{font-family:inherit;font-size:16px;}
 
 /* ── Responsive ── */
 @media(max-width:480px){
+  .outer{padding:0 6px;}
   .pt-cell{flex:1 1 48%;}
-  .dr-name{font-size:1.35rem;}
-  .rx-stamp{font-size:48px;}
-  .tb-btns .btn{font-size:11px;padding:0 10px;min-height:38px;}
+  .dr-name{font-size:1.3rem;}
+  .tb-btns .btn{font-size:11px;padding:0 9px;min-height:38px;}
+  .rx{padding:10px 14px 14px;}
+  .pf{padding:10px 16px;}
+  .sig-line{width:150px;}
 }
 </style>
 </head>
