@@ -1,0 +1,930 @@
+<!DOCTYPE html>
+<html lang="hi-IN">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover"/>
+<meta name="color-scheme" content="light"/>
+<meta name="format-detection" content="telephone=no"/>
+<title>Doctor Prescription — MedScript Pro</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;800&family=EB+Garamond:wght@600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+
+<style>
+/* ── Reset ── */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --navy:#0c2461;--gold:#b8860b;--teal:#0e6655;
+  --ink:#1a1a2e;--muted:#5a6478;--line:#d4dae6;--paper:#fff;
+  --safe-t:env(safe-area-inset-top,0px);--safe-b:env(safe-area-inset-bottom,0px);
+}
+body{
+  font-family:'Inter',system-ui,-apple-system,sans-serif;
+  background:linear-gradient(150deg,#c4cdd8,#b0bfcf);
+  color:var(--ink);font-size:14px;line-height:1.5;min-height:100vh;
+  padding-top:var(--safe-t);padding-bottom:var(--safe-b);
+  -webkit-text-size-adjust:100%;
+  -webkit-print-color-adjust:exact;print-color-adjust:exact;
+}
+input,select,textarea,button{font-family:inherit;font-size:16px;}
+
+/* ── Hindi label helpers ── */
+.hi{display:block;font-size:8px;font-weight:400;color:#8a94a4;text-transform:none;letter-spacing:0;margin-top:1px;}
+.hi-i{font-size:.82em;font-weight:400;color:#9aa3b3;text-transform:none;letter-spacing:0;}
+
+/* ── Toolbar ── */
+.toolbar{
+  background:linear-gradient(135deg,#0a1f45,#1a3a6c);color:#fff;
+  padding:max(10px,var(--safe-t)) 14px 10px;min-height:54px;
+  display:flex;align-items:center;justify-content:space-between;
+  gap:10px;flex-wrap:wrap;position:sticky;top:0;z-index:1000;
+  box-shadow:0 3px 20px rgba(0,0,0,.3);
+}
+.tb-logo{display:flex;align-items:center;gap:10px;font-weight:700;font-size:14px;flex-shrink:0;}
+.tb-logo small{font-size:9px;opacity:.6;display:block;margin-top:-2px;font-weight:400;}
+.tb-btns{display:flex;gap:6px;flex-wrap:wrap;align-items:center;}
+.btn{
+  display:inline-flex;align-items:center;justify-content:center;
+  gap:5px;min-height:42px;padding:0 13px;border-radius:7px;border:none;
+  cursor:pointer;font-weight:600;font-size:12px;
+  transition:filter .15s,transform .1s;white-space:nowrap;
+  -webkit-tap-highlight-color:transparent;touch-action:manipulation;
+}
+.btn:active{transform:scale(.97);}
+.btn:hover{filter:brightness(1.1);}
+.btn-setup{background:var(--teal);color:#fff;}
+.btn-new{background:rgba(255,255,255,.13);color:#fff;border:1px solid rgba(255,255,255,.3);}
+.btn-print{background:#2563eb;color:#fff;}
+.btn-pdf{background:var(--gold);color:#fff;}
+
+/* ── Outer / Pad ── */
+.outer{max-width:210mm;margin:18px auto 50px;padding:0 12px;}
+.pad{background:var(--paper);box-shadow:0 8px 48px rgba(0,0,0,.18);border-radius:2px;}
+.topbar,.bottombar{
+  height:6px;
+  background:linear-gradient(90deg,var(--navy),var(--gold) 55%,var(--teal));
+  -webkit-print-color-adjust:exact;print-color-adjust:exact;
+}
+.bottombar{background:linear-gradient(90deg,var(--teal),var(--gold) 45%,var(--navy));}
+
+/* ── Letterhead ── */
+.lh{
+  display:flex;justify-content:space-between;align-items:flex-start;
+  gap:16px;padding:18px 26px 16px;
+  border-bottom:2.5px solid var(--navy);
+}
+.lh-l{flex:1;min-width:0;}
+.lh-r{flex-shrink:0;text-align:right;min-width:180px;}
+@media(max-width:620px){
+  .lh{flex-wrap:wrap;}
+  .lh-r{text-align:left;min-width:0;}
+}
+.dr-name{
+  font-family:'Playfair Display',Georgia,serif;
+  font-size:clamp(1.4rem,4vw,1.9rem);font-weight:800;
+  color:var(--navy);letter-spacing:-.02em;line-height:1.1;
+  outline:none;cursor:text;
+  border-bottom:1.5px dashed rgba(12,36,97,.22);display:inline-block;
+}
+.dr-qual{
+  font-size:11.5px;font-weight:600;color:var(--gold);margin-top:7px;
+  outline:none;cursor:text;border-bottom:1px dashed rgba(184,134,11,.28);display:inline-block;
+}
+.dr-meta{font-size:11px;color:var(--muted);margin-top:8px;line-height:2;}
+.dr-meta span{color:var(--ink);font-weight:600;outline:none;cursor:text;border-bottom:1px dashed #c5cdd8;}
+.rx-stamp{
+  font-family:'EB Garamond',Georgia,serif;
+  font-size:66px;font-weight:700;color:var(--navy);
+  line-height:.85;letter-spacing:-3px;display:block;
+}
+.rx-stamp-lbl{font-size:9px;font-weight:700;letter-spacing:3px;color:var(--muted);text-transform:uppercase;margin-top:4px;}
+.clinic-lh{font-size:11px;color:var(--muted);line-height:1.9;margin-top:8px;text-align:right;}
+@media(max-width:620px){.clinic-lh{text-align:left;}}
+.clinic-nm{font-weight:700;font-size:13px;color:var(--navy);display:block;outline:none;cursor:text;border-bottom:1px dashed rgba(12,36,97,.2);}
+.clinic-lh span{outline:none;cursor:text;border-bottom:1px dashed rgba(12,36,97,.2);display:inline;}
+
+/* ── Patient strips ── */
+.pt-strip,.pt-strip2{
+  display:flex;flex-wrap:wrap;
+  background:#f4f7fb;border-bottom:1.5px solid var(--line);
+}
+.pt-cell{
+  display:flex;flex-direction:column;
+  padding:8px 14px;border-right:1px solid var(--line);
+  flex:1 1 120px;min-width:0;
+}
+.pt-cell:last-child{border-right:none;}
+.pt-lbl{font-size:9px;font-weight:700;color:var(--navy);text-transform:uppercase;letter-spacing:.9px;}
+.pt-inp{
+  border:none;background:transparent;
+  font-size:14px;font-weight:600;color:var(--ink);
+  padding:2px 0;width:100%;
+}
+.pt-inp:focus{outline:none;border-bottom:1.5px solid var(--navy);}
+.pt-inp::placeholder{color:#c0c8d5;font-style:italic;font-weight:400;font-size:12px;}
+
+/* ── Body ── */
+.body{display:flex;border-bottom:2px solid var(--navy);}
+@media(max-width:720px){.body{flex-direction:column;}}
+.sb{
+  width:158px;flex-shrink:0;
+  border-right:1.5px solid var(--navy);
+  background:#f8fafc;padding:12px 12px 16px;
+}
+@media(max-width:720px){
+  .sb{width:100%;border-right:none;border-bottom:1.5px solid var(--navy);
+    display:grid;grid-template-columns:repeat(3,1fr);gap:0 14px;align-items:start;}
+}
+.sb-head{
+  font-size:8.5px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;
+  color:var(--navy);border-bottom:1.5px solid var(--gold);padding-bottom:4px;margin:14px 0 8px;
+}
+.sb-head:first-child{margin-top:0;}
+.sb-head .hi{letter-spacing:0;font-size:9px;}
+@media(max-width:720px){.sb-head{grid-column:1/-1;}}
+.sf{margin-bottom:8px;}
+.sf label{font-size:9px;font-weight:600;color:var(--muted);display:block;margin-bottom:2px;}
+.sf input{
+  border:none;border-bottom:1px solid var(--line);
+  background:transparent;width:100%;font-size:13px;font-weight:600;color:var(--navy);padding:2px 0;
+}
+.sf input:focus{outline:none;border-bottom-color:var(--navy);}
+.sf input::placeholder{font-weight:400;color:#c0c8d5;font-size:10px;}
+
+/* ── Rx column ── */
+.rx{flex:1;min-width:0;padding:12px 20px 18px;}
+.s-lbl{font-size:9px;font-weight:700;letter-spacing:.9px;text-transform:uppercase;color:var(--muted);margin-bottom:4px;margin-top:12px;}
+.s-lbl:first-child{margin-top:0;}
+
+/* ── Textareas: auto-grow on screen ── */
+.ta{
+  display:block;width:100%;
+  border:none;border-bottom:1px solid var(--line);
+  background:transparent;font-size:13px;line-height:1.9;color:var(--ink);
+  resize:none;padding:3px 0;overflow:hidden;min-height:52px;
+}
+.ta:focus{outline:none;border-bottom-color:var(--navy);}
+.ta::placeholder{color:#c8cfda;font-style:italic;font-size:12px;}
+
+/* ── ta-clone: plain div that REPLACES textarea in print/PDF ── */
+.ta-clone{
+  display:none; /* hidden on screen */
+  width:100%;font-size:13px;line-height:1.9;color:var(--ink);
+  padding:3px 0;border-bottom:1px solid var(--line);
+  white-space:pre-wrap;word-break:break-word;min-height:20px;
+}
+
+.divider{border:none;border-top:1px dashed #d6dde8;margin:10px 0;}
+.rx-sym{font-family:'EB Garamond',Georgia,serif;font-size:48px;font-weight:700;color:var(--navy);line-height:1;margin:6px 0 4px;}
+.rx-hint{font-size:9px;color:#aaa;font-style:italic;margin:2px 0 7px;}
+
+/* ── Medicine rows ── */
+.mr{display:flex;gap:6px;align-items:flex-start;padding:6px 0;border-bottom:1px dashed #e2e8f3;}
+.mr:last-child{border-bottom:none;}
+.mr-num{font-size:11px;font-weight:700;color:var(--muted);padding-top:7px;flex-shrink:0;width:20px;text-align:right;}
+.mr-main{flex:1;min-width:0;}
+.mw{position:relative;}
+.mi{
+  border:none;background:transparent;
+  font-size:14px;font-weight:600;color:var(--ink);
+  width:100%;padding:4px 0;
+  border-bottom:1.5px solid var(--line);transition:border-color .15s;
+}
+.mi:focus{outline:none;border-bottom-color:var(--navy);}
+.mi::placeholder{font-weight:400;color:#c8cfda;font-style:italic;font-size:12px;}
+.mdd{
+  display:none;position:absolute;top:100%;left:0;right:0;
+  background:#fff;border:1.5px solid var(--navy);
+  box-shadow:0 10px 28px rgba(0,0,0,.15);z-index:700;
+  max-height:180px;overflow-y:auto;border-radius:0 0 6px 6px;
+}
+.mdd.open{display:block;}
+.mopt{padding:8px 12px;cursor:pointer;font-size:12px;border-bottom:1px solid #f0f4f9;color:var(--ink);}
+.mopt:hover,.mopt.sel{background:#eef3ff;color:var(--navy);font-weight:600;}
+
+.mdet{display:flex;align-items:center;gap:5px;margin-top:5px;flex-wrap:wrap;}
+.dose-grp{display:flex;gap:2px;}
+.dbtn{
+  width:28px;height:24px;border:1px solid var(--line);background:#fff;
+  font-size:9.5px;font-weight:700;color:var(--muted);cursor:pointer;
+  transition:all .12s;line-height:1;border-radius:3px;
+}
+.dbtn.on{background:var(--navy);color:#fff;border-color:var(--navy);}
+.dbtn:hover:not(.on){border-color:var(--navy);color:var(--navy);}
+.msel{
+  border:1px solid var(--line);border-radius:4px;background:#fff;
+  outline:none;color:var(--muted);cursor:pointer;font-size:10.5px;padding:3px 5px;min-height:26px;
+}
+.msel:focus{border-color:var(--navy);}
+.mr-del{
+  background:none;border:none;color:#ccd3de;cursor:pointer;
+  font-size:18px;padding:4px 4px;flex-shrink:0;transition:color .12s;line-height:1;
+}
+.mr-del:hover{color:#e53e3e;}
+
+/* Print-only dose summary (hidden on screen) */
+.mr-print{display:none;font-size:11px;color:var(--muted);margin-top:3px;line-height:1.6;}
+.mr-print .mrp-dose{font-weight:700;color:var(--navy);}
+
+.add-btn{
+  display:inline-flex;align-items:center;gap:6px;margin-top:8px;padding:8px 13px;
+  border:1.5px dashed var(--gold);background:#fdf8ed;color:var(--gold);
+  cursor:pointer;font-weight:700;font-size:11.5px;border-radius:5px;min-height:40px;
+  -webkit-tap-highlight-color:transparent;
+}
+.add-btn:hover{background:#faefc5;}
+
+/* ── Footer / Signature ── */
+.pf{
+  display:flex;justify-content:space-between;align-items:flex-end;
+  padding:14px 26px;background:#f4f7fb;flex-wrap:wrap;gap:14px;
+  border-top:1px solid var(--line);
+}
+.pf-left{flex:1;min-width:200px;}
+.pf-cname{font-weight:700;font-size:13px;color:var(--navy);outline:none;cursor:text;border-bottom:1px dashed rgba(12,36,97,.22);display:inline-block;}
+.pf-caddr{font-size:10.5px;color:var(--muted);line-height:1.9;margin-top:4px;}
+.pf-caddr span{outline:none;cursor:text;border-bottom:1px dashed #c5cdd8;display:inline;}
+.pf-right{text-align:center;flex-shrink:0;min-width:190px;}
+.sig-line{border-top:1.5px solid var(--navy);width:190px;margin:0 auto 6px;}
+.sig-name{font-weight:700;font-size:13.5px;color:var(--navy);}
+.sig-sub{font-size:10px;color:var(--muted);margin-top:1px;}
+.validity{text-align:center;font-size:9px;color:#9aa4b2;padding:7px 20px;border-top:1px solid #e8eaef;background:#fafbfd;line-height:1.7;}
+
+/* ── Modal ── */
+.overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:2000;align-items:center;justify-content:center;padding:14px;padding-top:max(14px,var(--safe-t));padding-bottom:max(14px,var(--safe-b));}
+.overlay.open{display:flex;}
+.modal{background:#fff;border-radius:10px;width:100%;max-width:460px;overflow:hidden;box-shadow:0 24px 70px rgba(0,0,0,.3);}
+.mh{background:linear-gradient(135deg,#0a1f45,#1a3a6c);color:#fff;padding:14px 20px;font-weight:700;font-size:14px;display:flex;align-items:center;justify-content:space-between;}
+.mh-close{background:rgba(255,255,255,.15);border:none;color:#fff;width:32px;height:32px;border-radius:6px;cursor:pointer;font-size:18px;line-height:1;transition:background .15s;}
+.mh-close:hover{background:rgba(255,255,255,.25);}
+.mb{padding:18px 20px;display:flex;flex-direction:column;gap:12px;max-height:65vh;overflow-y:auto;}
+.mfoot{padding:12px 20px;background:#f0f4fa;display:flex;justify-content:flex-end;gap:8px;}
+.mf{display:flex;flex-direction:column;gap:3px;}
+.mf label{font-size:9.5px;font-weight:700;color:var(--navy);text-transform:uppercase;letter-spacing:.5px;line-height:1.5;}
+.mf label .hi-i{text-transform:none;letter-spacing:0;font-size:9px;}
+.mf input,.mf textarea{border:1.5px solid var(--line);border-radius:6px;padding:9px 11px;color:var(--ink);background:#fafcff;transition:border-color .18s;width:100%;}
+.mf input:focus,.mf textarea:focus{border-color:var(--navy);outline:none;background:#fff;}
+.mf textarea{resize:vertical;min-height:60px;font-size:14px;}
+
+/* ── Toast ── */
+.toast{position:fixed;bottom:max(18px,var(--safe-b));right:16px;background:#0e6655;color:#fff;padding:10px 16px;border-radius:8px;font-weight:600;font-size:12.5px;box-shadow:0 6px 24px rgba(0,0,0,.22);z-index:3000;display:none;align-items:center;gap:7px;max-width:320px;}
+.toast.show{display:flex;animation:toast-in .22s ease;}
+@keyframes toast-in{from{transform:translateY(10px);opacity:0}to{transform:none;opacity:1}}
+::-webkit-scrollbar{width:5px;}::-webkit-scrollbar-thumb{background:#b0bac8;border-radius:4px;}
+
+/* ════════════════════════════════════════
+   PRINT STYLES
+   - @page reserves top/bottom margin space
+   - .page-header at top:0 fills the top margin (height must equal @page margin-top)
+   - .page-footer at bottom:0 fills the bottom margin (height must equal @page margin-bottom)
+   - Textareas are REPLACED by .ta-clone divs before print fires (via JS)
+   ════════════════════════════════════════ */
+@page{size:A4 portrait;margin:44mm 12mm 28mm;}
+.page-header,.page-footer{display:none;}
+
+@media print{
+  body{background:#fff!important;}
+
+  /* Hide all UI chrome */
+  .toolbar,.add-btn,.mr-del,.toast,.overlay,
+  .no-print,.mdd,.ta{display:none!important;}
+
+  /* Show plain-text textarea clones */
+  .ta-clone{display:block!important;}
+
+  /* Hide interactive medicine controls, show text summary */
+  .mdet{display:none!important;}
+  .mr-print{display:block!important;}
+
+  /* Hide on-screen letterhead (fixed page-header replaces it) */
+  .lh,.pf,.validity{display:none!important;}
+  .topbar.in-pad,.bottombar.in-pad{display:none!important;}
+
+  /* Page break rules */
+  .rx{page-break-inside:auto;}
+  .mr{page-break-inside:avoid;}
+  .pt-strip,.pt-strip2{page-break-inside:avoid;}
+  .outer{max-width:100%;margin:0;padding:0;}
+  .pad{box-shadow:none;border-radius:0;}
+
+  /* ── Repeating header: top:0 + height = @page margin-top (44mm) ── */
+  .page-header{
+    display:block!important;
+    position:fixed;top:0;left:0;right:0;height:44mm;
+    background:#fff;border-bottom:2.5px solid var(--navy);
+    padding:7px 0 6px;
+    -webkit-print-color-adjust:exact;print-color-adjust:exact;
+    z-index:9999;
+  }
+  .page-header .topbar{height:5px;margin:0 0 7px;}
+  .page-header-inner{padding:0 12mm;}
+
+  /* ── Repeating footer: bottom:0 + height = @page margin-bottom (28mm) ── */
+  .page-footer{
+    display:flex!important;
+    position:fixed;bottom:0;left:0;right:0;height:28mm;
+    background:#f4f7fb;border-top:1px solid var(--line);
+    padding:6px 12mm 0;
+    align-items:flex-start;justify-content:space-between;
+    -webkit-print-color-adjust:exact;print-color-adjust:exact;
+    z-index:9999;
+  }
+  .page-footer .bottombar{height:5px;position:absolute;bottom:0;left:0;right:0;}
+}
+
+/* ── pdf-mode: hide only UI chrome + swap textareas for plain divs ──
+   NOTE: .lh (letterhead), .pf (footer), .validity, color bars, sidebar
+   must all REMAIN VISIBLE — they are captured as content by html2pdf.
+   Only the fixed repeating print header/footer divs must be hidden
+   (they are position:fixed overlays meant only for browser print). ── */
+.pdf-mode .toolbar,
+.pdf-mode .no-print,
+.pdf-mode .toast,
+.pdf-mode .overlay,
+.pdf-mode .mdd,
+.pdf-mode .page-header,
+.pdf-mode .page-footer { display:none!important; }
+
+.pdf-mode .ta          { display:none!important; }   /* hide real textarea */
+.pdf-mode .ta-clone    { display:block!important; }  /* show plain-text div */
+.pdf-mode .mdet        { display:none!important; }   /* hide form controls  */
+.pdf-mode .mr-print    { display:block!important; }  /* show text summary   */
+.pdf-mode .pad         { box-shadow:none!important; border-radius:0!important; }
+
+/* Hide ALL placeholder text in PDF and print — empty fields show as blank lines */
+.pdf-mode input::placeholder,
+.pdf-mode textarea::placeholder { color:transparent!important; }
+@media print{
+  input::placeholder,textarea::placeholder { color:transparent!important; }
+}
+
+/* ── Responsive ── */
+@media(max-width:480px){
+  .pt-cell{flex:1 1 48%;}
+  .dr-name{font-size:1.35rem;}
+  .rx-stamp{font-size:48px;}
+  .tb-btns .btn{font-size:11px;padding:0 10px;min-height:38px;}
+}
+</style>
+</head>
+<body>
+
+<!-- ═══ TOOLBAR ═══ -->
+<div class="toolbar no-print">
+  <div class="tb-logo">
+    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <rect width="24" height="24" rx="6" fill="rgba(255,255,255,.1)"/>
+      <path d="M12 5v14M5 12h14" stroke="#fbbf24" stroke-width="2.5" stroke-linecap="round"/>
+    </svg>
+    <div><span>MedScript Pro</span><small>डिजिटल प्रिस्क्रिप्शन</small></div>
+  </div>
+  <div class="tb-btns">
+    <button type="button" class="btn btn-setup" onclick="openSetup()">&#9881; डॉक्टर प्रोफ़ाइल</button>
+    <button type="button" class="btn btn-new"   onclick="newPatient()">+ नया मरीज़</button>
+    <button type="button" class="btn btn-print" onclick="doPrint()">&#128438; प्रिंट / Print</button>
+    <button type="button" class="btn btn-pdf"   onclick="generatePDF()">&#128196; PDF डाउनलोड</button>
+  </div>
+</div>
+
+<!-- ═══ REPEATING PRINT HEADER (top:0, height:44mm = @page margin-top) ═══ -->
+<div class="page-header" aria-hidden="true">
+  <div class="topbar"></div>
+  <div class="page-header-inner" style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;">
+    <div style="flex:1;min-width:0;">
+      <div style="font-family:'Playfair Display',serif;font-size:17px;font-weight:800;color:var(--navy);" id="ph-drName"></div>
+      <div style="font-size:9.5px;font-weight:600;color:var(--gold);margin-top:2px;" id="ph-drQual"></div>
+      <div style="font-size:9px;color:var(--muted);margin-top:3px;">
+        Reg. No.: <strong id="ph-drReg"></strong> &nbsp;&bull;&nbsp; OPD: <strong id="ph-drOPD"></strong>
+      </div>
+    </div>
+    <div style="text-align:right;flex-shrink:0;">
+      <div style="font-family:'EB Garamond',serif;font-size:34px;font-weight:700;color:var(--navy);line-height:1;">&#8478;</div>
+      <div style="font-size:8px;font-weight:700;letter-spacing:2.5px;color:var(--muted);text-transform:uppercase;">Prescription / पर्चा</div>
+      <div style="font-size:9.5px;font-weight:700;color:var(--navy);margin-top:3px;" id="ph-clinicName"></div>
+      <div style="font-size:8.5px;color:var(--muted);" id="ph-clinicAddr"></div>
+      <div style="font-size:8.5px;color:var(--muted);">Ph: <span id="ph-clinicPhone"></span></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ REPEATING PRINT FOOTER (bottom:0, height:28mm = @page margin-bottom) ═══ -->
+<div class="page-footer" aria-hidden="true">
+  <div style="flex:1;min-width:0;">
+    <div style="font-weight:700;font-size:10px;color:var(--navy);" id="pf-clinicName"></div>
+    <div style="font-size:8px;color:var(--muted);margin-top:1px;" id="pf-addr"></div>
+    <div style="font-size:8px;color:var(--muted);">Ph: <span id="pf-phone"></span> &bull; <span id="pf-email"></span></div>
+    <div style="font-size:7.5px;color:#aaa;margin-top:2px;">जारी होने से 30 दिन तक मान्य &bull; बिना डॉक्टरी सलाह के दवा न लें</div>
+  </div>
+  <div style="text-align:center;flex-shrink:0;padding-left:10px;">
+    <div style="border-top:1.5px solid var(--navy);width:160px;margin:0 auto 4px;"></div>
+    <div style="font-weight:700;font-size:11px;color:var(--navy);" id="pf-drName"></div>
+    <div style="font-size:8.5px;color:var(--muted);" id="pf-drQual"></div>
+    <div style="font-size:7.5px;color:var(--muted);" id="pf-drReg"></div>
+  </div>
+  <div class="bottombar"></div>
+</div>
+
+<!-- ═══ PRESCRIPTION PAD ═══ -->
+<div class="outer">
+<div class="pad" id="pad">
+
+  <div class="topbar in-pad"></div>
+
+  <!-- ── Letterhead (screen only; print uses .page-header above) ── -->
+  <div class="lh">
+    <div class="lh-l">
+      <div class="dr-name" id="drName" contenteditable="true" spellcheck="false">Dr. Abhishek Halder</div>
+      <br/>
+      <div class="dr-qual" id="drQual" contenteditable="true" spellcheck="false">MBBS, MS, MCh (Neurosurgery) &nbsp;|&nbsp; Consultant Neurosurgeon</div>
+      <div class="dr-meta">
+        Reg. No.:&nbsp;<span id="drReg" contenteditable="true">MCI-99887766</span>
+        &nbsp;&bull;&nbsp;
+        OPD:&nbsp;<span id="drOPD" contenteditable="true">Mon – Sat, 9:00 AM – 5:00 PM</span>
+      </div>
+    </div>
+    <div class="lh-r">
+      <span class="rx-stamp">&#8478;</span>
+      <div class="rx-stamp-lbl">Prescription / पर्चा</div>
+      <div class="clinic-lh">
+        <div class="clinic-nm" id="clinicName" contenteditable="true" spellcheck="false">Neuro-Care Specialist Clinic</div>
+        <span id="clinicAddr" contenteditable="true">Advanced Medical Hub, Tower 2, Kolkata – 700001</span><br/>
+        Ph: <span id="clinicPhone" contenteditable="true">+91 99999 88888</span>
+        &nbsp;&bull;&nbsp;
+        <span id="clinicEmail" contenteditable="true">contact@neurocarekolkata.in</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Patient strip 1 ── -->
+  <div class="pt-strip">
+    <div class="pt-cell" style="flex:2.5">
+      <div class="pt-lbl">Patient Name <span class="hi">मरीज़ का नाम</span></div>
+      <input class="pt-inp" id="ptName" type="text" placeholder="पूरा नाम / Full name" autocomplete="name"/>
+    </div>
+    <div class="pt-cell">
+      <div class="pt-lbl">Age / Sex <span class="hi">उम्र / लिंग</span></div>
+      <input class="pt-inp" id="ptAgeSex" type="text" placeholder="45 वर्ष / M"/>
+    </div>
+    <div class="pt-cell">
+      <div class="pt-lbl">Date <span class="hi">तारीख</span></div>
+      <input class="pt-inp" id="ptDate" type="date"/>
+    </div>
+    <div class="pt-cell">
+      <div class="pt-lbl">Patient ID <span class="hi">मरीज़ ID</span></div>
+      <input class="pt-inp" id="ptId" type="text" autocomplete="off"/>
+    </div>
+  </div>
+
+  <!-- ── Patient strip 2 ── -->
+  <div class="pt-strip2">
+    <div class="pt-cell" style="flex:3;border-right:1px solid var(--line)">
+      <div class="pt-lbl">Diagnosis / Chief Complaint <span class="hi">बीमारी / मुख्य शिकायत</span></div>
+      <input class="pt-inp" id="ptDiag" type="text" placeholder="e.g. Hypertension, Migraine"/>
+    </div>
+    <div class="pt-cell" style="flex:1 1 150px">
+      <div class="pt-lbl">Phone <span class="hi">फ़ोन</span></div>
+      <input class="pt-inp" id="ptPhone" type="tel" inputmode="tel" placeholder="+91 XXXXX XXXXX"/>
+    </div>
+  </div>
+
+  <!-- ── Body ── -->
+  <div class="body">
+
+    <!-- Sidebar -->
+    <div class="sb">
+      <div class="sb-head">Vitals<span class="hi">महत्वपूर्ण संकेत</span></div>
+      <div class="sf"><label>BP (mmHg) <span class="hi-i">रक्तचाप</span></label><input type="text" id="vBp" inputmode="decimal" placeholder="120/80"/></div>
+      <div class="sf"><label>Pulse (bpm) <span class="hi-i">नब्ज़</span></label><input type="text" id="vPulse" inputmode="numeric" placeholder="72"/></div>
+      <div class="sf"><label>SpO₂ (%) <span class="hi-i">ऑक्सीजन</span></label><input type="text" id="vSpo2" inputmode="numeric" placeholder="98"/></div>
+      <div class="sf"><label>Temp (°F) <span class="hi-i">तापमान</span></label><input type="text" id="vTemp" inputmode="decimal" placeholder="98.6"/></div>
+      <div class="sf"><label>Weight (kg) <span class="hi-i">वज़न</span></label><input type="text" id="vWt" inputmode="decimal" placeholder="65"/></div>
+      <div class="sf"><label>Height (cm) <span class="hi-i">ऊंचाई</span></label><input type="text" id="vHt" inputmode="numeric" placeholder="170"/></div>
+      <div class="sb-head">Referred By<span class="hi">रेफ़र किया</span></div>
+      <div class="sf"><label>Doctor / डॉक्टर</label><input type="text" id="vRef" placeholder="Dr. Name"/></div>
+      <div class="sb-head">Follow-up<span class="hi">अगली मुलाकात</span></div>
+      <div class="sf"><label>Next Visit / अगली तारीख</label><input type="date" id="followup"/></div>
+    </div>
+
+    <!-- Rx Column -->
+    <div class="rx">
+      <div class="s-lbl">C/O — Complaints &amp; History <span class="hi-i">/ शिकायत व इतिहास</span></div>
+      <!-- The actual textarea (hidden in print/PDF) -->
+      <textarea class="ta" id="notes"
+        placeholder="मुख्य शिकायतें, इतिहास… / Chief complaints, history…"
+        oninput="autoGrow(this)"></textarea>
+      <!-- Clone div (shown in print/PDF, hidden on screen) -->
+      <div class="ta-clone" id="notes-clone"></div>
+
+      <div class="divider"></div>
+      <div class="rx-sym">&#8478;</div>
+      <p class="rx-hint">M / A / N — सुबह / दोपहर / रात &nbsp;|&nbsp; दवा का नाम टाइप करें</p>
+
+      <div id="medBody"></div>
+      <button type="button" class="add-btn no-print" onclick="addMedRow()">
+        <svg width="11" height="11" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3" fill="none"><line x1="12" y1="4" x2="12" y2="20"/><line x1="4" y1="12" x2="20" y2="12"/></svg>
+        + दवा जोड़ें / Add Medicine
+      </button>
+
+      <div class="divider" style="margin-top:12px;"></div>
+      <div class="s-lbl">Investigations <span class="hi-i">/ जाँचें</span></div>
+      <textarea class="ta" id="investigations"
+        placeholder="CBC, LFT, RFT, HbA1c, MRI, X-Ray, ECG…"
+        oninput="autoGrow(this)"></textarea>
+      <div class="ta-clone" id="investigations-clone"></div>
+
+      <div class="divider"></div>
+      <div class="s-lbl">Advice &amp; Instructions <span class="hi-i">/ सलाह व निर्देश</span></div>
+      <textarea class="ta" id="advice"
+        placeholder="खान-पान, आराम, परहेज़… / Diet, rest, restrictions…"
+        oninput="autoGrow(this)"></textarea>
+      <div class="ta-clone" id="advice-clone"></div>
+    </div>
+  </div>
+
+  <!-- ── Footer / Signature (screen only) ── -->
+  <div class="pf">
+    <div class="pf-left">
+      <div class="pf-cname" id="pfClinicName" contenteditable="true">Neuro-Care Specialist Clinic</div>
+      <div class="pf-caddr">
+        <span id="pfAddr" contenteditable="true">Advanced Medical Hub, Tower 2, Kolkata – 700001</span><br/>
+        Ph: <span id="pfPhone" contenteditable="true">+91 99999 88888</span>
+        &nbsp;&bull;&nbsp; Email: <span id="pfEmail" contenteditable="true">contact@neurocarekolkata.in</span>
+      </div>
+    </div>
+    <div class="pf-right">
+      <div class="sig-line"></div>
+      <div class="sig-name" id="sigName">Dr. Abhishek Halder</div>
+      <div class="sig-sub" id="sigSub">Consultant Neurosurgeon</div>
+    </div>
+  </div>
+
+  <div class="validity">
+    जारी होने की तारीख से 30 दिन तक मान्य &nbsp;&bull;&nbsp; बिना डॉक्टरी सलाह के दवा न लें<br/>
+    <span style="font-size:8px;color:#b0bac8;">Valid for 30 days from date of issue &bull; Do not self-medicate</span>
+  </div>
+  <div class="bottombar in-pad"></div>
+
+</div>
+</div>
+
+<!-- ═══ DOCTOR PROFILE MODAL ═══ -->
+<div class="overlay" id="setupModal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+  <div class="modal">
+    <div class="mh">
+      <span id="modalTitle">&#9881; डॉक्टर &amp; क्लीनिक प्रोफ़ाइल</span>
+      <button type="button" class="mh-close" onclick="closeSetup()" aria-label="बंद करें">&times;</button>
+    </div>
+    <div class="mb">
+      <div class="mf"><label>Doctor Full Name <span class="hi-i">/ डॉक्टर का नाम</span></label><input id="m_name" type="text" autocomplete="name"/></div>
+      <div class="mf"><label>Qualifications &amp; Speciality <span class="hi-i">/ योग्यता</span></label><input id="m_qual" type="text"/></div>
+      <div class="mf"><label>Reg. / MCI Number <span class="hi-i">/ पंजीकरण</span></label><input id="m_reg" type="text"/></div>
+      <div class="mf"><label>OPD Timing <span class="hi-i">/ OPD समय</span></label><input id="m_timing" type="text"/></div>
+      <div class="mf"><label>Clinic / Hospital Name <span class="hi-i">/ क्लीनिक का नाम</span></label><input id="m_clinic" type="text"/></div>
+      <div class="mf"><label>Address <span class="hi-i">/ पता</span></label><textarea id="m_addr" rows="2"></textarea></div>
+      <div class="mf"><label>Phone <span class="hi-i">/ फ़ोन</span></label><input id="m_phone" type="tel" inputmode="tel"/></div>
+      <div class="mf"><label>Email <span class="hi-i">/ ईमेल</span></label><input id="m_email" type="email" inputmode="email"/></div>
+    </div>
+    <div class="mfoot">
+      <button type="button" class="btn" style="background:#e2e8f0;color:#333;min-height:40px;" onclick="closeSetup()">रद्द करें</button>
+      <button type="button" class="btn btn-setup" style="min-height:40px;" onclick="saveSetup()">&#10003; सहेजें / Save</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast" role="status">
+  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+  <span id="toastMsg"></span>
+</div>
+
+<script>
+/* ─── Medicine list ─── */
+var MEDS=["Tab. Paracetamol 500mg","Tab. Paracetamol 650mg","Tab. Ibuprofen 400mg","Tab. Ibuprofen 600mg","Tab. Naproxen 500mg","Tab. Diclofenac 50mg","Tab. Aceclofenac 100mg","Tab. Aspirin 75mg","Tab. Aspirin 150mg","Tab. Atorvastatin 10mg","Tab. Atorvastatin 20mg","Tab. Atorvastatin 40mg","Tab. Rosuvastatin 10mg","Tab. Rosuvastatin 20mg","Tab. Metformin 500mg","Tab. Metformin 1000mg","Tab. Glimepiride 1mg","Tab. Glimepiride 2mg","Tab. Amlodipine 5mg","Tab. Amlodipine 10mg","Tab. Atenolol 50mg","Tab. Metoprolol 25mg","Tab. Metoprolol 50mg","Tab. Losartan 50mg","Tab. Telmisartan 40mg","Tab. Telmisartan 80mg","Tab. Pantoprazole 20mg","Tab. Pantoprazole 40mg","Tab. Omeprazole 20mg","Cap. Omeprazole 20mg","Tab. Rabeprazole 20mg","Tab. Esomeprazole 20mg","Tab. Ondansetron 4mg","Tab. Ondansetron 8mg","Tab. Metoclopramide 10mg","Tab. Cetirizine 5mg","Tab. Cetirizine 10mg","Tab. Levocetirizine 5mg","Tab. Montelukast 10mg","Tab. Montelukast+Levocetirizine","Cap. Amoxicillin 500mg","Tab. Azithromycin 250mg","Tab. Azithromycin 500mg","Tab. Ciprofloxacin 500mg","Tab. Doxycycline 100mg","Tab. Cefixime 200mg","Tab. Metronidazole 400mg","Tab. Pregabalin 75mg","Tab. Pregabalin 150mg","Tab. Pregabalin 300mg","Tab. Gabapentin 300mg","Tab. Gabapentin 600mg","Tab. Amitriptyline 10mg","Tab. Sertraline 50mg","Tab. Escitalopram 10mg","Tab. Levetiracetam 500mg","Tab. Levetiracetam 1000mg","Tab. Valproate 500mg","Tab. Carbamazepine 200mg","Tab. Citicoline 500mg","Tab. Methylcobalamin 500mcg","Tab. Methylcobalamin 1500mcg","Tab. Vitamin D3 60000IU","Tab. Calcium+Vitamin D3","Tab. Ferrous Sulphate 200mg","Tab. Folic Acid 5mg","Tab. Prednisolone 5mg","Tab. Prednisolone 10mg","Tab. Prednisolone 20mg","Tab. Furosemide 40mg","Tab. Spironolactone 25mg","Tab. Clonazepam 0.5mg","Tab. Alprazolam 0.25mg","Tab. Zolpidem 5mg","Tab. Melatonin 3mg","Tab. Tamsulosin 0.4mg","Tab. Levothyroxine 50mcg","Tab. Levothyroxine 100mcg","Syp. Paracetamol 125mg/5ml","Syp. Amoxicillin 125mg/5ml","Syp. Azithromycin 200mg/5ml","Syp. Domperidone 1mg/ml","Syp. Cetirizine 5mg/5ml","Oint. Diclofenac 1%","Drops Ciprofloxacin Eye/Ear","Inhaler Salbutamol 100mcg","Inhaler Budesonide 200mcg","Inj. Diclofenac 75mg/3ml","Inj. Tramadol 50mg/ml","Cap. Amoxicillin+Clavulanate 625mg","Tab. Clopidogrel 75mg","Tab. Pantoprazole+Domperidone"];
+
+var DUR_OPTS=[['','-- अवधि / Duration --'],['1 दिन / 1 day','1 दिन / 1 day'],['2 दिन / 2 days','2 दिन / 2 days'],['3 दिन / 3 days','3 दिन / 3 days'],['5 दिन / 5 days','5 दिन / 5 days'],['1 हफ़्ता / 7 days','1 हफ़्ता / 7 days'],['10 दिन / 10 days','10 दिन / 10 days'],['2 हफ़्ते / 14 days','2 हफ़्ते / 14 days'],['1 महीना / 1 month','1 महीना / 1 month'],['2 महीने / 2 months','2 महीने / 2 months'],['3 महीने / 3 months','3 महीने / 3 months'],['6 महीने / 6 months','6 महीने / 6 months'],['जारी रखें / Continue','जारी रखें / Continue'],['ज़रूरत पर / SOS','ज़रूरत पर / SOS']];
+
+var TIME_OPTS=[['','-- समय / Timing --'],['नाश्ते से पहले / Before Breakfast','नाश्ते से पहले / Before Breakfast'],['नाश्ते के बाद / After Breakfast','नाश्ते के बाद / After Breakfast'],['दोपहर से पहले / Before Lunch','दोपहर से पहले / Before Lunch'],['दोपहर के बाद / After Lunch','दोपहर के बाद / After Lunch'],['रात खाने से पहले / Before Dinner','रात खाने से पहले / Before Dinner'],['रात खाने के बाद / After Dinner','रात खाने के बाद / After Dinner'],['खाली पेट / Empty Stomach','खाली पेट / Empty Stomach'],['खाने के साथ / With Meals','खाने के साथ / With Meals'],['सोने से पहले / At Bedtime','सोने से पहले / At Bedtime'],['OD – एक बार रोज़','OD – एक बार रोज़'],['BD – दो बार रोज़','BD – दो बार रोज़'],['TDS – तीन बार रोज़','TDS – तीन बार रोज़'],['QID – चार बार रोज़','QID – चार बार रोज़'],['हर 8 घंटे / Every 8 hrs','हर 8 घंटे / Every 8 hrs'],['हर 12 घंटे / Every 12 hrs','हर 12 घंटे / Every 12 hrs'],['ज़रूरत पर / SOS','ज़रूरत पर / SOS']];
+
+var STOR_KEY='medscript_profile_v2';
+function $(id){return document.getElementById(id);}
+function todayISO(){var d=new Date(),z=function(n){return String(n).padStart(2,'0');};return d.getFullYear()+'-'+z(d.getMonth()+1)+'-'+z(d.getDate());}
+
+/* ─── Toast ─── */
+function showToast(msg){
+  $('toastMsg').textContent=msg;
+  var t=$('toast');t.classList.add('show');
+  clearTimeout(showToast._t);showToast._t=setTimeout(function(){t.classList.remove('show');},3500);
+}
+
+/* ─── Auto-grow textarea ─── */
+function autoGrow(el){el.style.height='0';el.style.height=el.scrollHeight+'px';}
+function autoGrowAll(){document.querySelectorAll('.ta').forEach(function(ta){autoGrow(ta);});}
+
+/* ═══════════════════════════════════════════════════
+   TEXTAREA SWAP — the ONLY reliable way to eliminate
+   scrollbars in print/PDF.
+   - preparePrint():  hides each .ta, shows a .ta-clone
+     div with the same text (no scrollbar possible)
+   - restoreAfterPrint(): reverses it
+═══════════════════════════════════════════════════ */
+/* Store/restore placeholder attributes so html2canvas never captures them */
+var _savedPlaceholders = [];
+function clearPlaceholders(){
+  _savedPlaceholders = [];
+  document.querySelectorAll('#pad input[placeholder], #pad textarea[placeholder]').forEach(function(el){
+    _savedPlaceholders.push({el:el, ph:el.getAttribute('placeholder')});
+    el.setAttribute('placeholder','');
+  });
+}
+function restorePlaceholders(){
+  _savedPlaceholders.forEach(function(p){ p.el.setAttribute('placeholder', p.ph); });
+  _savedPlaceholders = [];
+}
+
+function preparePrint(){
+  /* Textarea fields */
+  ['notes','investigations','advice'].forEach(function(id){
+    var ta=$(id), cl=$(id+'-clone');
+    if(!ta||!cl)return;
+    cl.textContent=ta.value;
+  });
+  /* Medicine row print summaries */
+  document.querySelectorAll('#medBody .mr').forEach(function(row){
+    var dbtns=row.querySelectorAll('.dbtn');
+    var sels=row.querySelectorAll('.msel');
+    var dose=[];dbtns.forEach(function(b){if(b.classList.contains('on'))dose.push(b.textContent);});
+    var dEl=row.querySelector('.mrp-dose'),
+        durEl=row.querySelector('.mrp-dur'),
+        timeEl=row.querySelector('.mrp-time');
+    if(dEl)  dEl.textContent=dose.length?dose.join(' · '):'';
+    if(durEl&&sels[0]) durEl.textContent=sels[0].value||'';
+    if(timeEl&&sels[1])timeEl.textContent=sels[1].value||'';
+  });
+  syncPrintElements();
+}
+
+/* ─── Sync repeating header/footer ─── */
+function syncPrintElements(){
+  var map={
+    'ph-drName':'drName','ph-drQual':'drQual','ph-drReg':'drReg','ph-drOPD':'drOPD',
+    'ph-clinicName':'clinicName','ph-clinicAddr':'clinicAddr','ph-clinicPhone':'clinicPhone',
+    'pf-clinicName':'clinicName','pf-addr':'clinicAddr','pf-phone':'clinicPhone','pf-email':'clinicEmail',
+    'pf-drName':'drName','pf-drQual':'drQual','pf-drReg':'drReg'
+  };
+  Object.keys(map).forEach(function(to){
+    var fr=$(map[to]),de=$(to);
+    if(fr&&de)de.textContent=fr.innerText||fr.textContent||'';
+  });
+  $('sigName').textContent=($('drName').innerText||'').trim();
+  var q=($('drQual').innerText||'').trim();
+  $('sigSub').textContent=q.length>60?q.slice(0,57)+'…':q;
+  $('pfClinicName').textContent=($('clinicName').innerText||'').trim();
+  $('pfAddr').textContent=($('clinicAddr').innerText||'').trim();
+  $('pfPhone').textContent=($('clinicPhone').innerText||'').trim();
+  $('pfEmail').textContent=($('clinicEmail').innerText||'').trim();
+}
+['drName','drQual','drReg','drOPD','clinicName','clinicAddr','clinicPhone','clinicEmail'].forEach(function(id){
+  var el=$(id);if(!el)return;
+  el.addEventListener('input',syncPrintElements);el.addEventListener('blur',syncPrintElements);
+});
+
+/* ─── Profile ─── */
+function loadProfile(){
+  try{
+    var raw=localStorage.getItem(STOR_KEY);if(!raw)return;
+    var p=JSON.parse(raw);
+    if(p.drName)  $('drName').textContent=p.drName;
+    if(p.drQual)  $('drQual').textContent=p.drQual;
+    if(p.drReg)   $('drReg').textContent=p.drReg;
+    if(p.drOPD)   $('drOPD').textContent=p.drOPD;
+    if(p.clinic)  $('clinicName').textContent=p.clinic;
+    if(p.addr)    $('clinicAddr').textContent=p.addr;
+    if(p.phone)   $('clinicPhone').textContent=p.phone;
+    if(p.email)   $('clinicEmail').textContent=p.email;
+    syncPrintElements();
+  }catch(e){}
+}
+function openSetup(){
+  $('m_name').value=($('drName').innerText||'').trim();
+  $('m_qual').value=($('drQual').innerText||'').trim();
+  $('m_reg').value=($('drReg').innerText||'').trim();
+  $('m_timing').value=($('drOPD').innerText||'').trim();
+  $('m_clinic').value=($('clinicName').innerText||'').trim();
+  $('m_addr').value=($('clinicAddr').innerText||'').trim();
+  $('m_phone').value=($('clinicPhone').innerText||'').trim();
+  $('m_email').value=($('clinicEmail').innerText||'').trim();
+  $('setupModal').classList.add('open');
+  setTimeout(function(){$('m_name').focus();},60);
+}
+function closeSetup(){$('setupModal').classList.remove('open');}
+function saveSetup(){
+  function v(id){return $(id).value.trim();}
+  var p={drName:v('m_name'),drQual:v('m_qual'),drReg:v('m_reg'),drOPD:v('m_timing'),
+         clinic:v('m_clinic'),addr:v('m_addr'),phone:v('m_phone'),email:v('m_email')};
+  if(p.drName)  $('drName').textContent=p.drName;
+  if(p.drQual)  $('drQual').textContent=p.drQual;
+  if(p.drReg)   $('drReg').textContent=p.drReg;
+  if(p.drOPD)   $('drOPD').textContent=p.drOPD;
+  if(p.clinic)  $('clinicName').textContent=p.clinic;
+  if(p.addr)    $('clinicAddr').textContent=p.addr;
+  if(p.phone)   $('clinicPhone').textContent=p.phone;
+  if(p.email)   $('clinicEmail').textContent=p.email;
+  syncPrintElements();
+  try{localStorage.setItem(STOR_KEY,JSON.stringify(p));}catch(e){}
+  closeSetup();showToast('प्रोफ़ाइल सहेज़ी गई!');
+}
+
+/* ─── New patient ─── */
+function newPatient(){
+  if(!confirm('मरीज़ का सारा डेटा हटाएँ?\n(डॉक्टर प्रोफ़ाइल बनी रहेगी)'))return;
+  ['ptName','ptAgeSex','ptPhone','ptDiag','notes','investigations','advice',
+   'vBp','vPulse','vSpo2','vTemp','vWt','vHt','vRef'].forEach(function(id){
+    var el=$(id);if(el){el.value='';if(el.tagName==='TEXTAREA')autoGrow(el);}
+  });
+  ['notes-clone','investigations-clone','advice-clone'].forEach(function(id){
+    var el=$(id);if(el)el.textContent='';
+  });
+  $('ptDate').value=todayISO();
+  $('ptId').value='PT-'+Date.now().toString().slice(-6);
+  var fu=$('followup');if(fu)fu.value='';
+  $('medBody').innerHTML='';
+  for(var i=0;i<4;i++)addMedRow();
+  window.scrollTo(0,0);showToast('नया पर्चा तैयार!');
+}
+
+/* ─── Build select ─── */
+function buildSelect(opts){
+  return '<select class="msel">'+opts.map(function(o){return'<option value="'+o[0]+'">'+o[1]+'</option>';}).join('')+'</select>';
+}
+
+/* ─── Medicine rows ─── */
+function addMedRow(){
+  var c=$('medBody');
+  var idx=c.children.length+1;
+  var d=document.createElement('div');d.className='mr';
+  var uid='mi'+Date.now()+'_'+idx;
+  d.innerHTML=
+    '<div class="mr-num">'+idx+'.</div>'+
+    '<div class="mr-main">'+
+      '<div class="mw">'+
+        '<input type="text" class="mi" id="'+uid+'" autocomplete="off" '+
+          'placeholder="दवा का नाम टाइप करें / Type drug name" '+
+          'oninput="flt(this)" onkeydown="mkey(event,this)" onfocus="flt(this)" onblur="hdd(this)"/>'+
+        '<div class="mdd" id="dd_'+uid+'"></div>'+
+      '</div>'+
+      '<div class="mdet">'+
+        '<div class="dose-grp">'+
+          '<button type="button" class="dbtn" title="सुबह" onclick="this.classList.toggle(\'on\');updMrPrint(this)">M</button>'+
+          '<button type="button" class="dbtn" title="दोपहर" onclick="this.classList.toggle(\'on\');updMrPrint(this)">A</button>'+
+          '<button type="button" class="dbtn" title="रात" onclick="this.classList.toggle(\'on\');updMrPrint(this)">N</button>'+
+        '</div>'+
+        buildSelect(DUR_OPTS)+
+        buildSelect(TIME_OPTS)+
+      '</div>'+
+      '<div class="mr-print"><span class="mrp-dose"></span><span class="mrp-sep" style="color:#c0c8d5;margin:0 5px;">|</span><span class="mrp-dur"></span><span class="mrp-sep2" style="color:#c0c8d5;margin:0 5px;">|</span><span class="mrp-time"></span></div>'+
+    '</div>'+
+    '<button type="button" class="mr-del no-print" onclick="delRow(this)" title="हटाएँ">&times;</button>';
+  c.appendChild(d);
+  var sels=d.querySelectorAll('.msel');
+  sels.forEach(function(sel){sel.addEventListener('change',function(){updMrPrint(this);});});
+}
+function updMrPrint(el){
+  var row=el.closest('.mr');if(!row)return;
+  var dbtns=row.querySelectorAll('.dbtn'),sels=row.querySelectorAll('.msel');
+  var dose=[];dbtns.forEach(function(b){if(b.classList.contains('on'))dose.push(b.textContent);});
+  var dEl=row.querySelector('.mrp-dose'),durEl=row.querySelector('.mrp-dur'),timeEl=row.querySelector('.mrp-time');
+  if(dEl)  dEl.textContent=dose.length?dose.join('·'):'';
+  if(durEl&&sels[0]) durEl.textContent=sels[0].value||'';
+  if(timeEl&&sels[1])timeEl.textContent=sels[1].value||'';
+}
+function delRow(b){
+  b.closest('.mr').remove();
+  document.querySelectorAll('#medBody .mr').forEach(function(r,i){
+    var n=r.querySelector('.mr-num');if(n)n.textContent=(i+1)+'.';
+  });
+}
+
+/* ─── Autocomplete ─── */
+function flt(inp){
+  var q=inp.value.trim().toLowerCase(),dd=$('dd_'+inp.id);if(!dd)return;
+  dd.innerHTML='';if(!q){dd.classList.remove('open');return;}
+  var hits=MEDS.filter(function(m){return m.toLowerCase().indexOf(q)>=0;}).slice(0,20);
+  if(!hits.length){dd.classList.remove('open');return;}
+  hits.forEach(function(m){
+    var o=document.createElement('div');o.className='mopt';o.textContent=m;
+    o.onmousedown=function(e){e.preventDefault();inp.value=m;dd.classList.remove('open');};
+    dd.appendChild(o);
+  });dd.classList.add('open');
+}
+function hdd(inp){setTimeout(function(){var dd=$('dd_'+inp.id);if(dd)dd.classList.remove('open');},200);}
+function mkey(e,inp){
+  var dd=$('dd_'+inp.id);if(!dd)return;
+  var opts=dd.querySelectorAll('.mopt'),cur=dd.querySelector('.mopt.sel'),ci=-1;
+  opts.forEach(function(o,i){if(o===cur)ci=i;});
+  if(e.key==='ArrowDown'){e.preventDefault();if(cur)cur.classList.remove('sel');var n=Math.min(ci+1,opts.length-1);if(opts[n])opts[n].classList.add('sel');}
+  else if(e.key==='ArrowUp'){e.preventDefault();if(cur)cur.classList.remove('sel');var n2=Math.max(ci-1,0);if(opts[n2])opts[n2].classList.add('sel');}
+  else if(e.key==='Enter'){e.preventDefault();if(cur){inp.value=cur.textContent;dd.classList.remove('open');}}
+  else if(e.key==='Escape'){dd.classList.remove('open');}
+}
+
+/* ─── Print ─── */
+function doPrint(){
+  preparePrint();
+  window.print();
+}
+window.addEventListener('afterprint',function(){
+  /* Nothing to restore — ta-clone is always sync'd, ta is always present */
+});
+
+/* ─── PDF Generation ─── */
+function generatePDF(){
+  if(typeof html2pdf==='undefined'){showToast('PDF library not loaded — प्रिंट बटन इस्तेमाल करें।');return;}
+
+  /* Step 1: sync all text clone divs & print summaries */
+  preparePrint();
+
+  var ptName=$('ptName').value.trim()||'Patient';
+  var ptDate=$('ptDate').value||todayISO();
+  var fname='Rx_'+ptName.replace(/\s+/g,'_').slice(0,30)+'_'+ptDate+'.pdf';
+
+  var drName=($('drName').innerText||'').trim();
+  var drQual=($('drQual').innerText||'').trim();
+  var drReg=($('drReg').innerText||'').trim();
+  var clinicName=($('clinicName').innerText||'').trim();
+  var clinicAddr=($('clinicAddr').innerText||'').trim();
+  var clinicPhone=($('clinicPhone').innerText||'').trim();
+  var clinicEmail=($('clinicEmail').innerText||'').trim();
+
+  /* Step 2: Add pdf-mode + clear placeholder text */
+  document.body.classList.add('pdf-mode');
+  clearPlaceholders();
+  document.querySelectorAll('.mdd').forEach(function(d){d.classList.remove('open');});
+
+  var el=$('pad');
+  var opt={
+    margin:[5,8,14,8],
+    filename:fname,
+    image:{type:'jpeg',quality:0.96},
+    html2canvas:{scale:2,useCORS:true,letterRendering:true,logging:false,scrollX:0,scrollY:0,windowWidth:document.documentElement.offsetWidth},
+    jsPDF:{unit:'mm',format:'a4',orientation:'portrait'},
+    pagebreak:{mode:['css','legacy'],avoid:['.lh','.pt-strip','.pt-strip2','.mr']}
+  };
+
+  showToast('PDF तैयार हो रहा है…');
+
+  /* Step 3: Wait for layout to settle, then capture */
+  requestAnimationFrame(function(){requestAnimationFrame(function(){
+    setTimeout(function(){
+      html2pdf()
+        .set(opt).from(el).toPdf().get('pdf')
+        .then(function(pdf){
+          var pC=pdf.internal.getNumberOfPages();
+          var pW=pdf.internal.pageSize.getWidth();
+          var pH=pdf.internal.pageSize.getHeight();
+          var fy=pH-10; /* 14mm bottom margin → footer line sits at -10mm from bottom */
+
+          for(var i=1;i<=pC;i++){
+            pdf.setPage(i);
+            /* Thin divider line */
+            pdf.setDrawColor(180,190,205);pdf.setLineWidth(0.3);
+            pdf.line(8,fy,pW-8,fy);
+            /* Page number centered */
+            pdf.setFontSize(7);pdf.setTextColor(160,165,175);
+            pdf.text('Page '+i+' of '+pC+' \u2022 '+drName+' \u2022 '+clinicName,pW/2,fy+4,{align:'center'});
+            /* Bottom color bar */
+            pdf.setFillColor(14,102,85);pdf.rect(0,pH-2.5,pW*0.38,2.5,'F');
+            pdf.setFillColor(184,134,11);pdf.rect(pW*0.38,pH-2.5,pW*0.24,2.5,'F');
+            pdf.setFillColor(12,36,97);pdf.rect(pW*0.62,pH-2.5,pW*0.38,2.5,'F');
+          }
+        })
+        .save()
+        .then(function(){
+          document.body.classList.remove('pdf-mode');
+          restorePlaceholders();
+          showToast('PDF सहेज़ा गया: '+fname);
+        })
+        .catch(function(){
+          document.body.classList.remove('pdf-mode');
+          restorePlaceholders();
+          showToast('PDF नहीं बना — प्रिंट → Save as PDF आज़माएँ');
+        });
+    },120);
+  });});
+}
+
+/* ─── Modal events ─── */
+$('setupModal').addEventListener('click',function(e){if(e.target===this)closeSetup();});
+document.addEventListener('keydown',function(e){
+  if(e.key==='Escape'&&$('setupModal').classList.contains('open'))closeSetup();
+  if((e.ctrlKey||e.metaKey)&&e.key==='p'){e.preventDefault();generatePDF();}
+});
+
+/* ─── Init ─── */
+$('ptDate').value=todayISO();
+$('ptId').value='PT-'+Date.now().toString().slice(-6);
+loadProfile();
+syncPrintElements();
+for(var _i=0;_i<4;_i++)addMedRow();
+</script>
+</body>
+</html>
