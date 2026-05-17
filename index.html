@@ -57,6 +57,8 @@ input,select,textarea,button{font-family:inherit;font-size:16px;}
 .btn-new{background:rgba(255,255,255,.13);color:#fff;border:1px solid rgba(255,255,255,.3);}
 .btn-print{background:#2563eb;color:#fff;}
 .btn-pdf{background:var(--gold);color:#fff;}
+.btn-save{background:#7c3aed;color:#fff;}
+.btn-load{background:#0891b2;color:#fff;}
 
 /* ── Outer / Pad ── */
 .outer{max-width:210mm;margin:18px auto 50px;padding:0 12px;}
@@ -389,10 +391,13 @@ input,select,textarea,button{font-family:inherit;font-size:16px;}
     <div><span>MedScript Pro</span><small>डिजिटल प्रिस्क्रिप्शन</small></div>
   </div>
   <div class="tb-btns">
-    <button type="button" class="btn btn-setup" onclick="openSetup()">&#9881; डॉक्टर प्रोफ़ाइल</button>
-    <button type="button" class="btn btn-new"   onclick="newPatient()">+ नया मरीज़</button>
+    <button type="button" class="btn btn-setup" onclick="openSetup()">&#9881; डॉक्टर प्रोफ़ाइल / Profile</button>
+    <button type="button" class="btn btn-new"   onclick="newPatient()">+ नया मरीज़ / New Patient</button>
+    <button type="button" class="btn btn-load"  onclick="loadPrescriptionData()">&#128194; पर्चा खोलें / Load Rx</button>
+    <button type="button" class="btn btn-save"  onclick="savePrescriptionData()">&#128190; डेटा सेव / Save Data</button>
     <button type="button" class="btn btn-print" onclick="doPrint()">&#128438; प्रिंट / Print</button>
-    <button type="button" class="btn btn-pdf"   onclick="generatePDF()">&#128196; PDF डाउनलोड</button>
+    <button type="button" class="btn btn-pdf"   onclick="generatePDF()">&#128196; PDF डाउनलोड / Download</button>
+    <input type="file" id="rxFileInput" accept=".rxdata,.json" style="display:none" onchange="handleRxFile(event)"/>
   </div>
 </div>
 
@@ -443,12 +448,11 @@ input,select,textarea,button{font-family:inherit;font-size:16px;}
   <!-- ── Letterhead (screen only; print uses .page-header above) ── -->
   <div class="lh">
     <div class="lh-l">
-      <div class="dr-name" id="drName" contenteditable="true" spellcheck="false">Dr. Abhishek Halder</div>
+      <div class="dr-name" id="drName" contenteditable="true" spellcheck="false">Dr. A. Kumar</div>
       <br/>
       <div class="dr-qual" id="drQual" contenteditable="true" spellcheck="false">MBBS, MS, MCh (Neurosurgery) &nbsp;|&nbsp; Consultant Neurosurgeon</div>
       <div class="dr-meta">
-        Reg. No.:&nbsp;<span id="drReg" contenteditable="true">MCI-99887766</span>
-        &nbsp;&bull;&nbsp;
+        <span id="drReg" style="display:none"></span>
         OPD:&nbsp;<span id="drOPD" contenteditable="true">Mon – Sat, 9:00 AM – 5:00 PM</span>
       </div>
     </div>
@@ -456,11 +460,11 @@ input,select,textarea,button{font-family:inherit;font-size:16px;}
       <span class="rx-stamp">&#8478;</span>
       <div class="rx-stamp-lbl">Prescription / पर्चा</div>
       <div class="clinic-lh">
-        <div class="clinic-nm" id="clinicName" contenteditable="true" spellcheck="false">Neuro-Care Specialist Clinic</div>
-        <span id="clinicAddr" contenteditable="true">Advanced Medical Hub, Tower 2, Kolkata – 700001</span><br/>
+        <div class="clinic-nm" id="clinicName" contenteditable="true" spellcheck="false">Medical Consultation</div>
+        <span id="clinicAddr" contenteditable="true">Lucknow, Uttar Pradesh</span><br/>
         Ph: <span id="clinicPhone" contenteditable="true">+91 99999 88888</span>
         &nbsp;&bull;&nbsp;
-        <span id="clinicEmail" contenteditable="true">contact@neurocarekolkata.in</span>
+        <span id="clinicEmail" contenteditable="true">doctor@medscript.in</span>
       </div>
     </div>
   </div>
@@ -554,11 +558,11 @@ input,select,textarea,button{font-family:inherit;font-size:16px;}
   <!-- ── Footer / Signature (screen only) ── -->
   <div class="pf">
     <div class="pf-left">
-      <div class="pf-cname" id="pfClinicName" contenteditable="true">Neuro-Care Specialist Clinic</div>
+      <div class="pf-cname" id="pfClinicName" contenteditable="true">Private Consultation</div>
       <div class="pf-caddr">
-        <span id="pfAddr" contenteditable="true">Advanced Medical Hub, Tower 2, Kolkata – 700001</span><br/>
+        <span id="pfAddr" contenteditable="true">Kolkata, West Bengal</span><br/>
         Ph: <span id="pfPhone" contenteditable="true">+91 99999 88888</span>
-        &nbsp;&bull;&nbsp; Email: <span id="pfEmail" contenteditable="true">contact@neurocarekolkata.in</span>
+        &nbsp;&bull;&nbsp; Email: <span id="pfEmail" contenteditable="true">doctor@medscript.in</span>
       </div>
     </div>
     <div class="pf-right">
@@ -845,6 +849,110 @@ window.addEventListener('afterprint',function(){
   /* Nothing to restore — ta-clone is always sync'd, ta is always present */
 });
 
+/* ─── Save / Load Prescription Data ─── */
+function collectFormData(){
+  var meds=[];
+  document.querySelectorAll('#medBody .mr').forEach(function(row){
+    var inp=row.querySelector('.mi');
+    var dbtns=row.querySelectorAll('.dbtn');
+    var sels=row.querySelectorAll('.msel');
+    var dose=[];
+    dbtns.forEach(function(b,i){if(b.classList.contains('on'))dose.push(i);});
+    meds.push({
+      name:inp?inp.value:'',
+      dose:dose,
+      duration:sels[0]?sels[0].value:'',
+      timing:sels[1]?sels[1].value:''
+    });
+  });
+  return{
+    _v:1,_app:'MedScriptPro',
+    patientName:$('ptName').value,
+    ageSex:$('ptAgeSex').value,
+    date:$('ptDate').value,
+    ptId:$('ptId').value,
+    diagnosis:$('ptDiag').value,
+    phone:$('ptPhone').value,
+    vBp:$('vBp').value,vPulse:$('vPulse').value,
+    vSpo2:$('vSpo2').value,vTemp:$('vTemp').value,
+    vWt:$('vWt').value,vHt:$('vHt').value,
+    vRef:$('vRef').value,
+    followup:$('followup').value,
+    notes:$('notes').value,
+    investigations:$('investigations').value,
+    advice:$('advice').value,
+    medicines:meds
+  };
+}
+function populateFormData(data){
+  function set(id,val){var el=$(id);if(el&&val!==undefined)el.value=val;}
+  set('ptName',data.patientName);set('ptAgeSex',data.ageSex);
+  set('ptDate',data.date);set('ptId',data.ptId);
+  set('ptDiag',data.diagnosis);set('ptPhone',data.phone);
+  set('vBp',data.vBp);set('vPulse',data.vPulse);
+  set('vSpo2',data.vSpo2);set('vTemp',data.vTemp);
+  set('vWt',data.vWt);set('vHt',data.vHt);
+  set('vRef',data.vRef);set('followup',data.followup);
+  ['notes','investigations','advice'].forEach(function(id){
+    if(data[id]!==undefined){
+      $(id).value=data[id];autoGrow($(id));
+      var cl=$(id+'-clone');if(cl)cl.textContent=data[id];
+    }
+  });
+  /* Rebuild medicine rows */
+  $('medBody').innerHTML='';
+  var meds=data.medicines||[];
+  if(!meds.length){for(var i=0;i<4;i++)addMedRow();return;}
+  meds.forEach(function(med){
+    addMedRow();
+    var row=$('medBody').lastElementChild;
+    var inp=row.querySelector('.mi');
+    var dbtns=row.querySelectorAll('.dbtn');
+    var sels=row.querySelectorAll('.msel');
+    if(inp)inp.value=med.name||'';
+    if(med.dose)med.dose.forEach(function(i){if(dbtns[i])dbtns[i].classList.add('on');});
+    if(sels[0]&&med.duration)sels[0].value=med.duration;
+    if(sels[1]&&med.timing)sels[1].value=med.timing;
+    updMrPrint(row.querySelector('.dbtn')||row);
+  });
+}
+function savePrescriptionData(){
+  var data=collectFormData();
+  var json=JSON.stringify(data,null,2);
+  var blob=new Blob([json],{type:'application/json'});
+  var url=URL.createObjectURL(blob);
+  var a=document.createElement('a');
+  a.href=url;
+  var _p2=function(n){return(n<10?'0':'')+n;};
+  var _n2=new Date();
+  var _ts2=_n2.getFullYear()+_p2(_n2.getMonth()+1)+_p2(_n2.getDate())+'_'+_p2(_n2.getHours())+_p2(_n2.getMinutes());
+  var nm=(data.patientName||'Patient').replace(/\s+/g,'_').slice(0,25);
+  a.download='Rx_'+nm+'_'+_ts2+'.rxdata';
+  document.body.appendChild(a);a.click();
+  setTimeout(function(){document.body.removeChild(a);URL.revokeObjectURL(url);},1000);
+  showToast('पर्चे का डेटा सहेज़ा गया (.rxdata)');
+}
+function loadPrescriptionData(){
+  $('rxFileInput').value='';
+  $('rxFileInput').click();
+}
+function handleRxFile(e){
+  var file=e.target.files[0];if(!file)return;
+  var reader=new FileReader();
+  reader.onload=function(ev){
+    try{
+      var data=JSON.parse(ev.target.result);
+      if(!data._app&&!data.patientName&&!data.medicines){
+        showToast('अमान्य फ़ाइल — MedScript .rxdata फ़ाइल चुनें');return;
+      }
+      populateFormData(data);
+      window.scrollTo(0,0);
+      showToast('पर्चा लोड हुआ — अब संपादित करें!');
+    }catch(err){showToast('फ़ाइल पढ़ने में त्रुटि / Invalid file');}
+  };
+  reader.readAsText(file);
+}
+
 /* ─── PDF Generation ─── */
 function generatePDF(){
   if(typeof html2pdf==='undefined'){showToast('PDF library not loaded — प्रिंट बटन इस्तेमाल करें।');return;}
@@ -853,16 +961,20 @@ function generatePDF(){
   preparePrint();
 
   var ptName=$('ptName').value.trim()||'Patient';
-  var ptDate=$('ptDate').value||todayISO();
-  var fname='Rx_'+ptName.replace(/\s+/g,'_').slice(0,30)+'_'+ptDate+'.pdf';
+  var _now=new Date();
+  var _p=function(n){return(n<10?'0':'')+n;};
+  var _ds=_now.getFullYear()+_p(_now.getMonth()+1)+_p(_now.getDate());
+  var _ts=_p(_now.getHours())+_p(_now.getMinutes());
+  var fname='Rx_'+ptName.replace(/\s+/g,'_').slice(0,25)+'_'+_ds+'_'+_ts+'.pdf';
 
-  var drName=($('drName').innerText||'').trim();
-  var drQual=($('drQual').innerText||'').trim();
-  var drReg=($('drReg').innerText||'').trim();
-  var clinicName=($('clinicName').innerText||'').trim();
-  var clinicAddr=($('clinicAddr').innerText||'').trim();
-  var clinicPhone=($('clinicPhone').innerText||'').trim();
-  var clinicEmail=($('clinicEmail').innerText||'').trim();
+  function _txt(id){var e=$(id);return e?(e.innerText||e.textContent||'').trim():'';}
+  var drName=_txt('drName');
+  var drQual=_txt('drQual');
+  var drReg=_txt('drReg');
+  var clinicName=_txt('clinicName');
+  var clinicAddr=_txt('clinicAddr');
+  var clinicPhone=_txt('clinicPhone');
+  var clinicEmail=_txt('clinicEmail');
 
   /* Step 2: Add pdf-mode + clear placeholder text */
   document.body.classList.add('pdf-mode');
