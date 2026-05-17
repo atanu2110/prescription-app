@@ -460,10 +460,9 @@ input,select,textarea,button{font-family:inherit;font-size:16px;}
       <span class="rx-stamp">&#8478;</span>
       <div class="rx-stamp-lbl">Prescription / पर्चा</div>
       <div class="clinic-lh">
+        <span id="clinicPhone" style="display:none"></span>
         <div class="clinic-nm" id="clinicName" contenteditable="true" spellcheck="false">Medical Consultation</div>
         <span id="clinicAddr" contenteditable="true">Lucknow, Uttar Pradesh</span><br/>
-        Ph: <span id="clinicPhone" contenteditable="true">+91 99999 88888</span>
-        &nbsp;&bull;&nbsp;
         <span id="clinicEmail" contenteditable="true">doctor@medscript.in</span>
       </div>
     </div>
@@ -561,8 +560,8 @@ input,select,textarea,button{font-family:inherit;font-size:16px;}
       <div class="pf-cname" id="pfClinicName" contenteditable="true">Private Consultation</div>
       <div class="pf-caddr">
         <span id="pfAddr" contenteditable="true">Kolkata, West Bengal</span><br/>
-        Ph: <span id="pfPhone" contenteditable="true">+91 99999 88888</span>
-        &nbsp;&bull;&nbsp; Email: <span id="pfEmail" contenteditable="true">doctor@medscript.in</span>
+        <span id="pfPhone" style="display:none"></span>
+        Email: <span id="pfEmail" contenteditable="true">doctor@medscript.in</span>
       </div>
     </div>
     <div class="pf-right">
@@ -688,13 +687,13 @@ function syncPrintElements(){
     var fr=$(map[to]),de=$(to);
     if(fr&&de)de.textContent=fr.innerText||fr.textContent||'';
   });
-  $('sigName').textContent=($('drName').innerText||'').trim();
-  var q=($('drQual').innerText||'').trim();
-  $('sigSub').textContent=q.length>60?q.slice(0,57)+'…':q;
-  $('pfClinicName').textContent=($('clinicName').innerText||'').trim();
-  $('pfAddr').textContent=($('clinicAddr').innerText||'').trim();
-  $('pfPhone').textContent=($('clinicPhone').innerText||'').trim();
-  $('pfEmail').textContent=($('clinicEmail').innerText||'').trim();
+  function _s(id){var e=$(id);return e?(e.innerText||e.textContent||'').trim():'';}
+  var _sn=$('sigName');if(_sn)_sn.textContent=_s('drName');
+  var _ss=$('sigSub');if(_ss){var q=_s('drQual');_ss.textContent=q.length>60?q.slice(0,57)+'…':q;}
+  var _pc=$('pfClinicName');if(_pc)_pc.textContent=_s('clinicName');
+  var _pa=$('pfAddr');if(_pa)_pa.textContent=_s('clinicAddr');
+  var _pp=$('pfPhone');if(_pp)_pp.textContent=_s('clinicPhone');
+  var _pe=$('pfEmail');if(_pe)_pe.textContent=_s('clinicEmail');
 }
 ['drName','drQual','drReg','drOPD','clinicName','clinicAddr','clinicPhone','clinicEmail'].forEach(function(id){
   var el=$(id);if(!el)return;
